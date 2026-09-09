@@ -839,7 +839,11 @@ def list_screenshots():
 def delete_screenshot(filename):
     filepath = safe_screenshot_path(filename)
 
-    if filepath is None or not os.path.exists(filepath):
+    # Security check: Ensure filepath is a valid file within SCREENSHOTS_DIR.
+    # Prevent path traversal or directory resolution (e.g., "", ".", "..")
+    # from resolving to SCREENSHOTS_DIR or a subdirectory and attempting directory deletion via os.remove.
+    screenshots_root = os.path.abspath(SCREENSHOTS_DIR)
+    if filepath is None or filepath == screenshots_root or os.path.isdir(filepath) or not os.path.exists(filepath):
         return {"ok": False, "error": "File not found"}, 404
 
     os.remove(filepath)

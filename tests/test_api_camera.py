@@ -119,3 +119,23 @@ def test_api_camera_screenshot_file_serves_the_already_validated_path(api_env, m
     send_file_spy.assert_called_once()
     served_path = send_file_spy.call_args[0][0]
     assert served_path == camera_module.safe_screenshot_path("plain.jpg")
+
+
+def test_camera_delete_screenshot_directory_traversal_returns_404(api_env):
+    """Verifies that delete_screenshot() rejects directory resolution attempts
+    (such as "", ".", "..", or subdirectory paths) with 404 without attempting
+    to call os.remove on directories."""
+    # Test with empty string, dot, dot-dot
+    for invalid_name in ("", ".", "..", "2025", "2025/01"):
+        res, code = camera_module.delete_screenshot(invalid_name)
+        assert code == 404
+        assert res == {"ok": False, "error": "File not found"}
+
+
+def test_api_camera_screenshot_delete_traversal_route(api_env):
+    """Verifies DELETE /api/camera/screenshot/<path:filename> with traversal
+    payloads returns 404 and does not delete directories."""
+    for payload in ("..", ".", "2025"):
+        response = api_env["client"].delete(f"/api/camera/screenshot/{payload}")
+        assert response.status_code == 404
+        assert response.get_json() == {"ok": False, "error": "File not found"}
