@@ -162,9 +162,10 @@ def register_weather_routes(
             _save_weather_secret(secrets_path, weather_manager.active_id, api_key)
             provider.set_api_key(api_key)
         except OSError as exc:
+            print(f"[WEATHER] Could not save API key: {exc}", flush=True)
             return jsonify({
                 "ok": False,
-                "error": f"Could not save the API key: {exc}",
+                "error": "Could not save the API key.",
             }), 500
 
         return jsonify({
