@@ -225,6 +225,14 @@ def test_is_safe_redirect_target_rejects_open_redirects():
     # rejected.
     assert _is_safe_redirect_target("/\t/evil.example") is False
 
+    # Control characters (ASCII 0-31 and 127) must be rejected to prevent
+    # URL manipulation, open redirects, or HTTP header injection.
+    assert _is_safe_redirect_target("/\x0b/evil.example") is False
+    assert _is_safe_redirect_target("/\x0c/evil.example") is False
+    assert _is_safe_redirect_target("/\r\n/evil.example") is False
+    assert _is_safe_redirect_target("/\x7f/evil.example") is False
+    assert _is_safe_redirect_target("/\x00/evil.example") is False
+
 
 def test_login_redirect_rejects_the_live_reproduced_open_redirect(tmp_path):
     # End-to-end regression test through the real route (not just the

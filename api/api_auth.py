@@ -260,6 +260,8 @@ def _is_safe_redirect_target(target):
     """
     if not target or not isinstance(target, str):
         return False
+    if any(ord(c) < 32 or ord(c) == 127 for c in target):
+        return False
     if not target.startswith("/") or target.startswith("//") or "\\" in target:
         return False
     parsed = urlsplit(target)
