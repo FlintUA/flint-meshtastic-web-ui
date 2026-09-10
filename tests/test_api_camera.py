@@ -119,3 +119,27 @@ def test_api_camera_screenshot_file_serves_the_already_validated_path(api_env, m
     send_file_spy.assert_called_once()
     served_path = send_file_spy.call_args[0][0]
     assert served_path == camera_module.safe_screenshot_path("plain.jpg")
+
+
+def test_api_camera_screenshot_delete_file_valid(api_env):
+    screenshots_dir = api_env["screenshots_dir"]
+    sub_dir = screenshots_dir / "2025" / "01" / "01"
+    sub_dir.mkdir(parents=True, exist_ok=True)
+    file_path = sub_dir / "MC_delete_test.jpg"
+    file_path.write_bytes(b"data to delete")
+
+    response = api_env["client"].delete("/api/camera/screenshot/2025/01/01/MC_delete_test.jpg")
+    assert response.status_code == 200
+    assert response.get_json()["ok"] is True
+    assert not file_path.exists()
+
+
+def test_api_camera_screenshot_delete_directory_returns_404(api_env):
+    screenshots_dir = api_env["screenshots_dir"]
+    sub_dir = screenshots_dir / "2025" / "01" / "01"
+    sub_dir.mkdir(parents=True, exist_ok=True)
+
+    response = api_env["client"].delete("/api/camera/screenshot/2025/01/01")
+    assert response.status_code == 404
+    assert response.get_json() == {"ok": False, "error": "File not found"}
+    assert sub_dir.exists()
