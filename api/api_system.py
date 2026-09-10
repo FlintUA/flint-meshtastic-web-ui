@@ -53,7 +53,9 @@ def register_system_routes(app, get_cpu_temperature=None, get_app_version=None):
 
     @app.route("/api/system/action", methods=["POST"])
     def api_system_action():
-        data = request.get_json(silent=True) or {}
+        data = request.get_json(silent=True, force=True)
+        if not isinstance(data, dict):
+            return jsonify({"ok": False, "error": "Invalid JSON payload"}), 400
         action = str(data.get("action") or "").strip()
 
         allowed = {
@@ -320,7 +322,9 @@ def register_system_routes(app, get_cpu_temperature=None, get_app_version=None):
 
     @app.route("/api/system/wifi/connect", methods=["POST"])
     def api_system_wifi_connect():
-        data = request.get_json(force=True)
+        data = request.get_json(silent=True, force=True)
+        if not isinstance(data, dict):
+            return jsonify({"ok": False, "error": "Invalid JSON payload"}), 400
         ssid = (data.get("ssid") or "").strip()
         password = data.get("password") or ""
         if not ssid:
@@ -339,7 +343,9 @@ def register_system_routes(app, get_cpu_temperature=None, get_app_version=None):
 
     @app.route("/api/system/wifi/forget", methods=["POST"])
     def api_system_wifi_forget():
-        data = request.get_json(force=True)
+        data = request.get_json(silent=True, force=True)
+        if not isinstance(data, dict):
+            return jsonify({"ok": False, "error": "Invalid JSON payload"}), 400
         ssid = (data.get("ssid") or "").strip()
         if not ssid:
             return jsonify({"ok": False, "error": "SSID is required"}), 400
@@ -454,14 +460,18 @@ def register_system_routes(app, get_cpu_temperature=None, get_app_version=None):
     def api_create_schedule():
         from meshsrv.schedule_engine import create_rule
 
-        data = request.get_json(force=True)
+        data = request.get_json(silent=True, force=True)
+        if not isinstance(data, dict):
+            return jsonify({"ok": False, "error": "Invalid JSON payload"}), 400
         return jsonify(create_rule(data)), 201
 
     @app.route("/api/schedules/<sid>", methods=["PUT"])
     def api_update_schedule(sid):
         from meshsrv.schedule_engine import update_rule
 
-        data = request.get_json(force=True)
+        data = request.get_json(silent=True, force=True)
+        if not isinstance(data, dict):
+            return jsonify({"ok": False, "error": "Invalid JSON payload"}), 400
         result = update_rule(sid, data)
         if result is None:
             return jsonify({"error": "not found"}), 404
@@ -493,7 +503,9 @@ def register_system_routes(app, get_cpu_temperature=None, get_app_version=None):
     def api_create_timer():
         from meshsrv.timer_service import create_timer
 
-        data = request.get_json(force=True)
+        data = request.get_json(silent=True, force=True)
+        if not isinstance(data, dict):
+            return jsonify({"ok": False, "error": "Invalid JSON payload"}), 400
         label = data.get("label", "")
         duration_s = data.get("duration_s")
         notify_cfg = data.get("notify")

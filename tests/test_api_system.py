@@ -181,3 +181,20 @@ def test_system_info_model_field_is_none_when_unavailable(client, monkeypatch):
     response = client.get("/api/system/info")
 
     assert response.get_json()["model"] is None
+
+
+@pytest.mark.parametrize("endpoint,method", [
+    ("/api/system/wifi/connect", "post"),
+    ("/api/system/wifi/forget", "post"),
+    ("/api/system/action", "post"),
+    ("/api/schedules", "post"),
+    ("/api/schedules/1", "put"),
+    ("/api/timers", "post"),
+])
+def test_invalid_json_payload_returns_400(client, endpoint, method):
+    tester = getattr(client, method)
+    response = tester(endpoint, data="[1, 2, 3]", content_type="application/json")
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data["ok"] is False or "error" in data
+    assert "error" in data
