@@ -520,9 +520,18 @@ def handle_errors(f):
             return jsonify({
                 "ok": False,
                 "error": str(e),
-                "traceback": traceback.format_exc() if app.debug else None
             }), 500
     return decorated_function
+
+
+@app.after_request
+def add_security_headers(response):
+    """Add standard HTTP security headers to protect against common web vulnerabilities."""
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 # Returns whether the camera is persisted enabled - read later in the
 # __main__ block to decide whether to build camera_manager_state["manager"]
