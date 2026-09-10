@@ -450,6 +450,15 @@ if not os.path.exists(SCREENSHOTS_DIR):
     os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
 
 app = Flask(__name__)
+
+@app.after_request
+def add_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
 waypoint_store = WaypointStore(WAYPOINTS_DB_FILE)
 
 # Flask session cookies (used by the optional password protection below)
