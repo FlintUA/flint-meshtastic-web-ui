@@ -5746,16 +5746,51 @@ def api_nodes_export():
 @app.route("/api/nodes_import", methods=["POST"])
 @handle_errors
 def api_nodes_import():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     imported_nodes = data.get("nodes", [])
+    if not isinstance(imported_nodes, list):
+        return jsonify({"ok": False, "error": "Invalid payload format", "error_code": "invalid_payload"}), 400
+
     imported_count = 0
     with state_lock:
         for node_data in imported_nodes:
-            node_id = node_data.get("node_id")
-            if not node_id:
+            if not isinstance(node_data, dict):
                 continue
+            node_id = str(node_data.get("node_id") or "").strip()
+            # Security: validate node_id format (e.g. !00000000) to reject malformed,
+            # path-traversal, or injection payloads before persisting into nodes/chats.
+            if not node_id or not is_valid_node_id(node_id):
+                continue
+
             old = nodes.get(node_id, {})
-            name = node_data.get("name") or old.get("name") or friendly_unknown_node_name(node_id)
+            raw_name = node_data.get("name")
+            name = (
+                sanitize_text(str(raw_name).strip())
+                if raw_name is not None and str(raw_name).strip()
+                else (old.get("name") or friendly_unknown_node_name(node_id))
+            )
+
+            raw_short = node_data.get("short_name")
+            short_name = (
+                sanitize_text(str(raw_short).strip())
+                if raw_short is not None and str(raw_short).strip()
+                else (old.get("short_name", "") or node_id[-4:])
+            )
+
+            raw_hw = node_data.get("hw_model")
+            hw_model = (
+                sanitize_text(str(raw_hw).strip())
+                if raw_hw is not None and str(raw_hw).strip()
+                else old.get("hw_model", "")
+            )
+
+            raw_role = node_data.get("role")
+            role = (
+                sanitize_text(str(raw_role).strip())
+                if raw_role is not None and str(raw_role).strip()
+                else old.get("role", "CLIENT")
+            )
+
             nodes[node_id] = {
                 "name": name, "node_id": node_id,
                 "last_seen": old.get("last_seen", time.time()),
@@ -5765,9 +5800,9 @@ def api_nodes_import():
                 "hop_start": old.get("hop_start", ""),
                 "relay_node": old.get("relay_node", ""),
                 "last_text": old.get("last_text", ""),
-                "short_name": node_data.get("short_name", old.get("short_name", "") or node_id[-4:]),
-                "hw_model": node_data.get("hw_model", old.get("hw_model", "")),
-                "role": node_data.get("role", old.get("role", "CLIENT")),
+                "short_name": short_name,
+                "hw_model": hw_model,
+                "role": role,
                 "ignored": old.get("ignored", False),
                 "favorite": old.get("favorite", False),
                 # Importing metadata must not discard a stored position.
