@@ -312,6 +312,14 @@ def test_send_rejects_expiration_in_the_past(waypoint_env):
     assert response.get_json()["error_code"] == "waypoint_expiration_in_past"
 
 
+def test_send_rejects_expiration_out_of_range(waypoint_env):
+    response = waypoint_env["client"].post(
+        "/api/waypoints/send", json=_valid_send_payload(expire_at=9999999999999),
+    )
+    assert response.status_code == 400
+    assert response.get_json()["error_code"] == "waypoint_expiration_out_of_range"
+
+
 def test_send_returns_503_when_radio_unavailable(waypoint_env):
     waypoint_env["radio"].available = False
 

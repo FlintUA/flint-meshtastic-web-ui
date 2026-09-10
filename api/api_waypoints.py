@@ -135,10 +135,13 @@ def register_waypoint_routes(
             return jsonify({"ok": False, "error": "Channel index must be between 0 and 7", "error_code": "waypoint_invalid_channel_index"}), 400
         if expire_at <= int(time.time()) + 30:
             return jsonify({"ok": False, "error": "Expiration must be in the future", "error_code": "waypoint_expiration_in_past"}), 400
+        try:
+            expires_text = datetime.fromtimestamp(expire_at).strftime("%d.%m.%Y %H:%M")
+        except (OverflowError, ValueError, OSError):
+            return jsonify({"ok": False, "error": "Expiration timestamp is out of valid range", "error_code": "waypoint_expiration_out_of_range"}), 400
+
         if not is_radio_available():
             return jsonify({"ok": False, "error": "Meshtastic radio is currently unavailable", "error_code": "radio_released"}), 503
-
-        expires_text = datetime.fromtimestamp(expire_at).strftime("%d.%m.%Y %H:%M")
         notification_text = f"📍 Waypoint: {name}"
         if description:
             notification_text += f"\n{description}"
